@@ -70,6 +70,7 @@ FORM 0100_init CHANGING c_inited    TYPE flag
   ls_layout-cwidth_opt = abap_true.
   ls_layout-sel_mode   = 'D'.
   ls_layout-cwidth_opt = 'A'.
+  ls_layout-no_rowins = 'A'.
 
   "============================================================================
   " Setup the parameter IT_TOOLBAR_EXCLUDING for
@@ -102,12 +103,33 @@ FORM 0100_init CHANGING c_inited    TYPE flag
   DATA: lt_sort TYPE lvc_t_sort.
 
   "============================================================================
+  " Change the ALV handlers to react on change. By default they only react
+  " if the user triggers a function. A reaction on changing is needed to catch
+  " inserted rows if the user presses the paste keyboard shortcut (e.g.
+  " Ctrl+V).
+
+  " We can safely risk a dump
+  cobj_alv->register_edit_event( cl_gui_alv_grid=>mc_evt_modified ).
+
+  "============================================================================
+  " Setup the handlers of COBJ_ALV
+  DATA: ct_data_alv_ref LIKE REF TO ct_data_alv.
+  GET REFERENCE OF ct_data_alv INTO ct_data_alv_ref.
+
+  DATA: lobj_event_receiver TYPE REF TO zcl_0100_alv_event_receiver.
+  lobj_event_receiver = NEW zcl_0100_alv_event_receiver(
+     it_0100_alv_data_ref = ct_data_alv_ref
+  ).
+
+  SET HANDLER lobj_event_receiver->data_changed_finished FOR cobj_alv.
+
+  "============================================================================
   " Setup the actual ALV object GOBJ_ALV
   CALL METHOD cobj_alv->set_table_for_first_display
     EXPORTING
       is_variant           = ls_variant
       is_layout            = ls_layout
-      i_save               = abap_true
+      i_save               = 'A'
       it_toolbar_excluding = lt_toolbar_excluding
     CHANGING
       it_fieldcatalog      = lt_fieldcatalog
