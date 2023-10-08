@@ -208,6 +208,39 @@ FORM 0100_user_command USING i_okcode    TYPE syucomm
   ENDCASE.
 ENDFORM.
 
+FORM 0100_handle_data_changed_fin USING    i_modified
+                                           i_length_orig type int4
+                                  CHANGING ct_0100_alv_data_ref TYPE REF TO zbr_makt_update_t_data_alv.
+  "============================================================================
+  " Exit out if nothing has been changed
+  CHECK i_modified = abap_true.
+
+  "============================================================================
+  " Delete all lines after the original length
+  DATA(lf_i) = lines( ct_0100_alv_data_ref->* ).
+  DATA(lf_refresh) = abap_false.
+  WHILE lf_i > i_length_orig.
+    DELETE ct_0100_alv_data_ref->* INDEX lf_i.
+
+    lf_refresh = abap_true.
+
+    SUBTRACT 1 FROM lf_i.
+  ENDWHILE.
+
+  "============================================================================
+  " Refresh the ALV after modifiying it
+  IF lf_refresh = abap_true.
+    DATA: ls_stable TYPE lvc_s_stbl.
+    ls_stable-row = abap_true.
+    ls_stable-col = abap_true.
+    gobj_0100_alv->refresh_table_display(
+      is_stable      = ls_stable
+      i_soft_refresh = abap_true
+    ).
+  ENDIF.
+ENDFORM.
+
+
 FORM 0100_fieldcatalog CHANGING et_fieldcatalog TYPE lvc_t_fcat.
   CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
     EXPORTING

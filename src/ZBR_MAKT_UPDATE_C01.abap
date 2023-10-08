@@ -48,33 +48,12 @@ CLASS zcl_0100_alv_event_receiver IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD data_changed_finished.
-    "==========================================================================
-    " Exit out if nothing has been changed
-    CHECK e_modified = abap_true.
-
-    "==========================================================================
-    " Delete all lines after the original length
+    DATA(lf_length_orig) = get_length_orig( ).
     DATA(lt_0100_alv_data_ref) = get_0100_alv_data_ref( ).
-    DATA(lf_i) = lines( lt_0100_alv_data_ref->* ).
-    DATA(lf_refresh) = abap_false.
-    WHILE lf_i > length_orig.
-      DELETE t_0100_alv_data_ref->* INDEX lf_i.
 
-      lf_refresh = abap_true.
+    PERFORM 0100_handle_data_changed_fin USING    e_modified
+                                                  lf_length_orig
+                                         CHANGING lt_0100_alv_data_ref.
 
-      SUBTRACT 1 FROM lf_i.
-    ENDWHILE.
-
-    "==========================================================================
-    " Refresh the ALV after modifiying it
-    IF lf_refresh = abap_true.
-      DATA: ls_stable TYPE lvc_s_stbl.
-      ls_stable-row = abap_true.
-      ls_stable-col = abap_true.
-      gobj_0100_alv->refresh_table_display(
-        is_stable      = ls_stable
-        i_soft_refresh = abap_true
-      ).
-    ENDIF.
   ENDMETHOD.
 ENDCLASS.
